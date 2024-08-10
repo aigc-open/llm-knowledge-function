@@ -6,6 +6,14 @@
 pip install git+https://github.com/aigc-open/llm-knowledge-function.git
 ```
 
+## 下载模型
+```bash
+python3 -m llm_knowledge_function.download_model
+```
+```bash
+2024-08-10 19:24:55.231 | INFO     | daily_basic_function:wrapper:42 - 加载embedding模型: 14.704779386520386
+```
+
 ## 使用方法
 ```python
 from llm_knowledge_function import LocalKnowledge
