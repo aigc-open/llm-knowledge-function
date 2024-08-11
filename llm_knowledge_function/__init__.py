@@ -1,11 +1,12 @@
 import os
+import re
 from langchain_community.document_loaders import UnstructuredWordDocumentLoader, PyPDFium2Loader, UnstructuredMarkdownLoader, PyPDFLoader, TextLoader
 from langchain_core.documents.base import Document
 from typing import List, Optional
 from langchain_milvus.vectorstores import Milvus
 from langchain_text_splitters import RecursiveCharacterTextSplitter, CharacterTextSplitter, MarkdownTextSplitter, PythonCodeTextSplitter, NLTKTextSplitter, SentenceTransformersTokenTextSplitter, HTMLSectionSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from daily_basic_function import logger_execute_time
+from utils.daily_basic_function import logger_execute_time
 
 
 class LocalKnowledge:
@@ -44,9 +45,43 @@ class LocalKnowledge:
         docs: List[Document] = loader.load()
         return docs, Splitter
 
+    def pre_docs(self, docs: List[Document], strategys: list = []):
+        # 清理文本内容
+        def remove_url(text):
+            # 匹配 http:// 或 https:// 开头的 URL
+            url_pattern = r'https?://\S+'
+            return re.sub(url_pattern, '', text)
+
+        def remove_mail_url(text):
+            # 匹配标准的邮件地址模式
+            mail_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+            return re.sub(mail_pattern, '', text)
+
+        def replace_continue_space(text):
+            return text.replace("  ", "")
+
+        def replace_continue_n(text):
+            return text.replace("\n\n", "")
+
+        if not strategys:
+            return
+
+        for doc in docs:
+            if hasattr(doc, 'page_content'):
+                for strategy in strategys:
+                    if strategy == "remove_url":
+                        doc.page_content = remove_url(doc.page_content)
+                    if strategy == "remove_mail_url":
+                        doc.page_content = remove_url(doc.page_content)
+                    if strategy == "replace_continue_space":
+                        doc.page_content = remove_url(doc.page_content)
+                    if strategy == "replace_continue_n":
+                        doc.page_content = remove_url(doc.page_content)
+
     @logger_execute_time(doc="文档拆分")
-    def split_documents(self, filename, chunk_size=1000, chunk_overlap=0, namespace="xxxxx") -> List[Document]:
+    def split_documents(self, filename, chunk_size=1000, chunk_overlap=0, namespace="xxxxx", strategys: list = []) -> List[Document]:
         documents, Splitter = self.__load_data_from_file__(filename)
+        self.pre_docs(documents, strategys=strategys)
         for doc in documents:
             doc.metadata.update({"namespace": namespace})
         splitter = Splitter(
@@ -58,9 +93,9 @@ class LocalKnowledge:
         return self.vector_db.add_documents(documents)
 
     @logger_execute_time(doc="文档入库总时间")
-    def filename_to_milvus(self, filename, chunk_size=1000, chunk_overlap=0, namespace="xxxxx"):
+    def filename_to_milvus(self, filename, chunk_size=1000, chunk_overlap=0, namespace="xxxxx", strategys: list = []):
         documents = self.split_documents(
-            filename=filename, chunk_size=chunk_size, chunk_overlap=chunk_overlap, namespace=namespace)
+            filename=filename, chunk_size=chunk_size, chunk_overlap=chunk_overlap, namespace=namespace, strategys=strategys)
         return self.add_documents(documents)
 
     @logger_execute_time(doc="文档查询总时间")
