@@ -3,7 +3,7 @@ from langchain_community.document_loaders import UnstructuredWordDocumentLoader,
 from langchain_core.documents.base import Document
 from typing import List, Optional
 from langchain_milvus.vectorstores import Milvus
-from langchain_text_splitters import CharacterTextSplitter, MarkdownTextSplitter, PythonCodeTextSplitter, NLTKTextSplitter, SentenceTransformersTokenTextSplitter, HTMLSectionSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, CharacterTextSplitter, MarkdownTextSplitter, PythonCodeTextSplitter, NLTKTextSplitter, SentenceTransformersTokenTextSplitter, HTMLSectionSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from daily_basic_function import logger_execute_time
 
@@ -36,7 +36,7 @@ class LocalKnowledge:
             Splitter = PythonCodeTextSplitter
         elif filename.endswith(".html"):
             loader = TextLoader(filename)
-            Splitter = HTMLSectionSplitter
+            Splitter = RecursiveCharacterTextSplitter
         else:
             # 全按文本处理
             loader = TextLoader(filename)
